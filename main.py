@@ -25,6 +25,7 @@ quote = random.choice(quotes)
 pygame.mixer.init()
 pygame.mixer.music.load("Arkana - Kether.mp3")
 pygame.mixer.music.play(-1,0.0)
+pygame.mixer.music.set_volume(0.2)
 
 class TextWrap: # not written by me, used stackoverflow
 
@@ -211,11 +212,10 @@ class Screen:
 			tr.center = 1920//2+15, 1040
 			canvas.blit(t, tr)
 
-		# text1b = font50.render("")
 
 	@staticmethod
 	def draw_end(winner):
-
+		print("drew win screen")
 
 		if winner == Team.RED:
 			for ix, line in enumerate(TextWrap.wrapline(quote, font30, 1200)):
@@ -292,9 +292,9 @@ class Instantiate:
 
 		# BALLS
 		balls = [[], [], []]
-		Ball(screen_width // 2, screen_height // 2, Team.NONE, 1, speed=4, diameter=16) # spawns neutral ball
+		Ball(screen_width // 2, screen_height // 2, Team.NONE, 2, speed=4, diameter=16) # spawns neutral ball
 
-		Ball(screen_width // 2, screen_height // 2, Team.BLUE, 100, speed=3, diameter=10)
+		Ball(screen_width // 2, screen_height // 2, Team.BLUE, 1, speed=3, diameter=10)
 		Ball(screen_width // 2, screen_height // 2, Team.RED, 1, speed=3, diameter=10)
 
 		# PADDLES
@@ -316,10 +316,10 @@ class Instantiate:
 		# showing off win screen
 
 
-		# for i in range(5):
-		# 	for j in range(18):
-		# 		Brick(i * 30 + 200, j * 60, Team.BLUE, 10, size=(28, 58), hit_gold=2)
-		# 		Brick(i * 30 + 1560, j * 60, Team.RED, 10, size=(28, 58), hit_gold=2)
+		for i in range(5):
+			for j in range(18):
+				Brick(i * 30 + 200, j * 60, Team.BLUE, 10, size=(28, 58), hit_gold=2)
+				Brick(i * 30 + 1560, j * 60, Team.RED, 10, size=(28, 58), hit_gold=2)
 
 		# sets powerup to player's choice
 		blue_player.powerup = all_powerups[selected[0]]
@@ -363,13 +363,19 @@ def brick_collision(ball, brick, allies=False):
 		if not ball.already_hit:
 
 			ball_center_x = ball.x + ball.diameter / 2
+			ball_center_y = ball.y + ball.diameter / 2
+
 
 			if brick.x <= ball_center_x and ball_center_x <= brick.x + brick.size[0]: # checks centers for vertical or horizontal collision
-				if not ball.effects["ghost"]: # ignores collision (does not bounce) if ball is ghosted
+				if not ball.effects["ghost"] or allies == False: # ignores collision (does not bounce) if ball is ghosted
 					ball.bounce(1)
-			else:
-				if not ball.effects["ghost"]:
+			elif brick.y <= ball_center_y and ball_center_y <= brick.y + brick.size[1]:
+				if not ball.effects["ghost"] or allies == False:
 					ball.bounce(0)
+			else:
+				if not ball.effects["ghost"] or allies == False:
+					ball.bounce(0)
+					ball.bounce(1)
 
 			ball.already_hit = True
 
@@ -560,11 +566,11 @@ class Ball(Object):
 				speed=1
 			)
 		if self.effects["hex"]: # spawns new particles if ball has hex effect
-			Particle(
+			FadeParticle(
 				self.x+self.diameter/2,
 				self.y+self.diameter/2,
 				6,
-				velo=( -(self.velo[0]+ 0.5*(random.random()*2-1)), -(self.velo[1]+ 0.5*(random.random()*2-1)) ),
+				velo=( -(self.velo[0]+ 0.3*(random.random()*2-1)), -(self.velo[1]+ 0.3*(random.random()*2-1)) ),
 				color=(143, 255, 9),
 				speed=0.5
 			)
@@ -1006,7 +1012,7 @@ class Accelerate(PowerUp):
 
 class Obfuscate(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=10, charges=3, duration=2)
+		PowerUp.__init__(self, cost=1, charges=3, duration=2)
 		self.name = "Obfuscate"
 		self.symbol = 'O'
 		self.description = "Activating the ability will consume a charge: Grant invisibility to all allied balls. This effect lasts for 2s, reactivating the ability again within 2s will extend the invisibility duration."
@@ -1025,7 +1031,7 @@ class Obfuscate(PowerUp):
 
 class Explosive(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=60, charges=1, duration=0.5)
+		PowerUp.__init__(self, cost=1, charges=1, duration=0.5)
 		self.name = "Explosive"
 		self.symbol = 'X'
 		self.description = "Activating the ability will cause the ball will explode after 0.5s. Enemy bricks will take damage based on proximity to the explosion; explosion damage will scale with ball damage."
@@ -1074,7 +1080,7 @@ class Explosive(PowerUp):
 
 class Ghost(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=100, charges=2, duration=0.5)
+		PowerUp.__init__(self, cost=1, charges=2, duration=0.5)
 		self.name = "Ghost"
 		self.symbol = 'G'
 		self.description = "Activating the ability will consume a charge: Allied balls will be able to pass through bricks for 0.5s, all bricks in contact with the ball will be destroyed. Balls gain 20du."
@@ -1097,7 +1103,7 @@ class Ghost(PowerUp):
 
 class Hex(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=20, charges=4, duration=4)
+		PowerUp.__init__(self, cost=1, charges=4, duration=4)
 		self.name = "Hex"
 		self.symbol = 'H'
 		self.description = "Activating the ability will consume a charge: When an allied ball collides withs an enemy brick, the brick will lose -1 health every 1s."
@@ -1116,7 +1122,7 @@ class Hex(PowerUp):
 
 class Clone(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=60, charges=4, duration=0)
+		PowerUp.__init__(self, cost=1, charges=4, duration=0)
 		self.name = "Clone"
 		self.symbol = 'C'
 		self.description = "Activating the ability will consume a charge: The original ball clones itself, each clone is stronger than the previous, gaining +1 damage."
@@ -1135,14 +1141,14 @@ class Clone(PowerUp):
 
 class Wither(PowerUp):
 	def __init__(self):
-		PowerUp.__init__(self, cost=80, charges=3, duration=8)
+		PowerUp.__init__(self, cost=1, charges=3, duration=8)
 		self.name = "Wither"
 		self.symbol = 'W'
 		self.description = "Activating the ability will consume a charge: Slow the enemy paddle by 30p / 60p / 90p for 8s."
 
 	def execute(self, team, enemy_paddle, **kwargs):
 		PowerUp.execute(self, team)
-		enemy_paddle.size[1] -= 55
+		enemy_paddle.size[1] -= 40
 		enemy_paddle.speed = max(enemy_paddle.speed - 0.9, 0.3)
 		enemy_paddle.color = (90, 90, 90)
 
@@ -1150,7 +1156,8 @@ class Wither(PowerUp):
 
 	def reset(self, team, enemy_paddle, **kwargs):
 		PowerUp.reset(self, team)
-		enemy_paddle.size[1] += 55
+		for _ in range(self.called):
+			enemy_paddle.size[1] += 40
 		enemy_paddle.speed = 3
 		enemy_paddle.set_default_color()
 
@@ -1312,6 +1319,7 @@ while running:
 		if winner != None:
 			Instantiate.end(winner=winner)
 			screen = Screen.END
+			continue
 
 		keys = pygame.key.get_pressed()
 		for paddle in paddles:
